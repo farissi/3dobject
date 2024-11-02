@@ -9,7 +9,7 @@ import {
   BASEMENT_DEPTH,
   WALL_MARGIN
 } from '../../constants/building';
-import { calculateBalconyPositions } from '../../utils/buildingCalculations';
+import { calculateWindowPositions, addSketchEffect } from '../../utils/buildingCalculations';
 
 interface BuildingDetailsProps {
   type: 'apartment' | 'house';
@@ -17,6 +17,19 @@ interface BuildingDetailsProps {
   width: number;
   depth: number;
   hasBasement: boolean;
+}
+
+function createDetailLine(start: Point3D, end: Point3D, segments: number = 3): Point3D[] {
+  const points: Point3D[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    points.push([
+      addSketchEffect(start[0] + (end[0] - start[0]) * t),
+      addSketchEffect(start[1] + (end[1] - start[1]) * t),
+      addSketchEffect(start[2] + (end[2] - start[2]) * t)
+    ]);
+  }
+  return points;
 }
 
 export function BuildingDetails({ type, floors, width, depth, hasBasement }: BuildingDetailsProps) {
@@ -48,42 +61,17 @@ function getApartmentDetails(
   const baseY = hasBasement ? -BASEMENT_DEPTH : 0;
   const totalHeight = floors * FLOOR_HEIGHT;
 
-  // Balconies and railings
-  const balconyPositions = calculateBalconyPositions(width);
+  // Window decorations and frames
+  const windowPositions = calculateWindowPositions(width, 4);
   for (let i = 0; i < floors; i++) {
     const y = i * FLOOR_HEIGHT;
-    
-    // Balconies
-    balconyPositions.forEach((x, index) => {
-      if (index % 2 === 0) { // Alternate balconies for visual interest
-        const balconyWidth = 1.8;
-        points.push([
-          [x, y, 0], [x + balconyWidth, y, 0],
-          [x + balconyWidth, y + 1, 0], [x, y + 1, 0],
-          [x, y, 0]
-        ]);
-
-        // Railings
-        for (let rx = x; rx <= x + balconyWidth; rx += 0.3) {
-          points.push([[rx, y, 0], [rx, y + 1, 0]]);
-        }
-
-        // Balcony side panels
-        points.push(
-          [[x, y, 0], [x, y + 1, 0.3]],
-          [[x + balconyWidth, y, 0], [x + balconyWidth, y + 1, 0.3]]
-        );
-      }
-    });
-
-    // Window decorations
-    balconyPositions.forEach(x => {
+    windowPositions.forEach(x => {
       points.push(
         // Window frame
-        [[x, y + 0.9, 0], [x + WINDOW_WIDTH, y + 0.9, 0]],
-        [[x, y + 0.9 + WINDOW_HEIGHT, 0], [x + WINDOW_WIDTH, y + 0.9 + WINDOW_HEIGHT, 0]],
+        createDetailLine([x - 0.1, y + 0.9, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9, 0.01]),
+        createDetailLine([x - 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]),
         // Window sill
-        [[x - 0.1, y + 0.9, 0], [x + WINDOW_WIDTH + 0.1, y + 0.9, 0.2]]
+        createDetailLine([x - 0.1, y + 0.9, 0], [x + WINDOW_WIDTH + 0.1, y + 0.9, 0.2])
       );
     });
   }
@@ -92,33 +80,33 @@ function getApartmentDetails(
   const doorCenter = width / 2;
   points.push(
     // Door frame details
-    [[doorCenter - 0.6, 0, 0.01], [doorCenter - 0.6, 2.4, 0.01]],
-    [[doorCenter + 0.6, 0, 0.01], [doorCenter + 0.6, 2.4, 0.01]],
-    [[doorCenter - 0.6, 2.4, 0.01], [doorCenter + 0.6, 2.4, 0.01]],
+    createDetailLine([doorCenter - 0.6, 0, 0.01], [doorCenter - 0.6, 2.4, 0.01]),
+    createDetailLine([doorCenter + 0.6, 0, 0.01], [doorCenter + 0.6, 2.4, 0.01]),
+    createDetailLine([doorCenter - 0.6, 2.4, 0.01], [doorCenter + 0.6, 2.4, 0.01]),
     // Door handle
-    [[doorCenter + 0.3, 1.2, 0.02], [doorCenter + 0.3, 1.6, 0.02]]
+    createDetailLine([doorCenter + 0.3, 1.2, 0.02], [doorCenter + 0.3, 1.6, 0.02])
   );
 
   // Roof details
   points.push(
     // Roof edge trim
-    [[0, totalHeight, 0], [0, totalHeight + 0.3, 0.3]],
-    [[width, totalHeight, 0], [width, totalHeight + 0.3, 0.3]],
-    [[0, totalHeight, depth], [0, totalHeight + 0.3, depth - 0.3]],
-    [[width, totalHeight, depth], [width, totalHeight + 0.3, depth - 0.3]]
+    createDetailLine([0, totalHeight, 0], [0, totalHeight + 0.3, 0.3]),
+    createDetailLine([width, totalHeight, 0], [width, totalHeight + 0.3, 0.3]),
+    createDetailLine([0, totalHeight, depth], [0, totalHeight + 0.3, depth - 0.3]),
+    createDetailLine([width, totalHeight, depth], [width, totalHeight + 0.3, depth - 0.3])
   );
 
   // Basement details
   if (hasBasement) {
     points.push(
       // Basement window frames
-      [[2, baseY + 0.5, 0.01], [3, baseY + 0.5, 0.01]],
-      [[2, baseY + 1.3, 0.01], [3, baseY + 1.3, 0.01]],
-      [[width - 3, baseY + 0.5, 0.01], [width - 2, baseY + 0.5, 0.01]],
-      [[width - 3, baseY + 1.3, 0.01], [width - 2, baseY + 1.3, 0.01]],
+      createDetailLine([2, baseY + 0.5, 0.01], [3, baseY + 0.5, 0.01]),
+      createDetailLine([2, baseY + 1.3, 0.01], [3, baseY + 1.3, 0.01]),
+      createDetailLine([width - 3, baseY + 0.5, 0.01], [width - 2, baseY + 0.5, 0.01]),
+      createDetailLine([width - 3, baseY + 1.3, 0.01], [width - 2, baseY + 1.3, 0.01]),
       // Window wells
-      [[1.8, baseY, 0], [3.2, baseY, 0.3]],
-      [[width - 3.2, baseY, 0], [width - 1.8, baseY, 0.3]]
+      createDetailLine([1.8, baseY, 0], [3.2, baseY, 0.3]),
+      createDetailLine([width - 3.2, baseY, 0], [width - 1.8, baseY, 0.3])
     );
   }
 
@@ -141,57 +129,32 @@ function getHouseDetails(
   const chimneyX = width * 0.75;
   points.push(
     // Main chimney structure
-    [
-      [chimneyX, totalHeight, depth/3], 
-      [chimneyX + chimneyWidth, totalHeight, depth/3],
-      [chimneyX + chimneyWidth, totalHeight + 2, depth/3], 
-      [chimneyX, totalHeight + 2, depth/3],
-      [chimneyX, totalHeight, depth/3]
-    ],
-    [
-      [chimneyX, totalHeight, depth/3 + 0.5], 
-      [chimneyX + chimneyWidth, totalHeight, depth/3 + 0.5],
-      [chimneyX + chimneyWidth, totalHeight + 2, depth/3 + 0.5], 
-      [chimneyX, totalHeight + 2, depth/3 + 0.5],
-      [chimneyX, totalHeight, depth/3 + 0.5]
-    ],
-    // Chimney cap details
-    [
-      [chimneyX - 0.1, totalHeight + 2, depth/3 - 0.1],
-      [chimneyX + chimneyWidth + 0.1, totalHeight + 2, depth/3 - 0.1],
-      [chimneyX + chimneyWidth + 0.1, totalHeight + 2, depth/3 + 0.6],
-      [chimneyX - 0.1, totalHeight + 2, depth/3 + 0.6],
-      [chimneyX - 0.1, totalHeight + 2, depth/3 - 0.1]
-    ]
-  );
-
-  // Roof details
-  points.push(
-    // Roof trim
-    [[0, totalHeight, 0], [width/2, totalHeight + roofHeight + 0.2, 0]],
-    [[width/2, totalHeight + roofHeight + 0.2, 0], [width, totalHeight, 0]],
-    [[0, totalHeight, depth], [width/2, totalHeight + roofHeight + 0.2, depth]],
-    [[width/2, totalHeight + roofHeight + 0.2, depth], [width, totalHeight, depth]],
-    // Roof ridge decoration
-    [[width/2 - 0.1, totalHeight + roofHeight, 0], [width/2 - 0.1, totalHeight + roofHeight, depth]],
-    [[width/2 + 0.1, totalHeight + roofHeight, 0], [width/2 + 0.1, totalHeight + roofHeight, depth]]
+    createDetailLine([chimneyX, totalHeight, depth/3], [chimneyX + chimneyWidth, totalHeight, depth/3]),
+    createDetailLine([chimneyX + chimneyWidth, totalHeight, depth/3], [chimneyX + chimneyWidth, totalHeight + 2, depth/3]),
+    createDetailLine([chimneyX + chimneyWidth, totalHeight + 2, depth/3], [chimneyX, totalHeight + 2, depth/3]),
+    createDetailLine([chimneyX, totalHeight + 2, depth/3], [chimneyX, totalHeight, depth/3]),
+    // Chimney cap
+    createDetailLine([chimneyX - 0.1, totalHeight + 2, depth/3 - 0.1], [chimneyX + chimneyWidth + 0.1, totalHeight + 2, depth/3 - 0.1]),
+    createDetailLine([chimneyX + chimneyWidth + 0.1, totalHeight + 2, depth/3 - 0.1], [chimneyX + chimneyWidth + 0.1, totalHeight + 2, depth/3 + 0.4]),
+    createDetailLine([chimneyX + chimneyWidth + 0.1, totalHeight + 2, depth/3 + 0.4], [chimneyX - 0.1, totalHeight + 2, depth/3 + 0.4]),
+    createDetailLine([chimneyX - 0.1, totalHeight + 2, depth/3 + 0.4], [chimneyX - 0.1, totalHeight + 2, depth/3 - 0.1])
   );
 
   // Window details
-  const windowPositions = calculateBalconyPositions(width);
+  const windowPositions = calculateWindowPositions(width, 2);
   for (let i = 0; i < floors; i++) {
     const y = i * FLOOR_HEIGHT;
     windowPositions.forEach(x => {
       const doorCenter = width / 2;
       if (Math.abs(x - doorCenter) > 1.5 || i > 0) {
         points.push(
-          // Window frame
-          [[x - 0.1, y + 0.9, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9, 0.01]],
-          [[x - 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]],
-          [[x - 0.1, y + 0.9, 0.01], [x - 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]],
-          [[x + WINDOW_WIDTH + 0.1, y + 0.9, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]],
-          // Window sill
-          [[x - 0.2, y + 0.9, 0], [x + WINDOW_WIDTH + 0.2, y + 0.9, 0.2]]
+          // Window frames
+          createDetailLine([x - 0.1, y + 0.9, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9, 0.01]),
+          createDetailLine([x - 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]),
+          createDetailLine([x - 0.1, y + 0.9, 0.01], [x - 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]),
+          createDetailLine([x + WINDOW_WIDTH + 0.1, y + 0.9, 0.01], [x + WINDOW_WIDTH + 0.1, y + 0.9 + WINDOW_HEIGHT, 0.01]),
+          // Window sills
+          createDetailLine([x - 0.2, y + 0.9, 0], [x + WINDOW_WIDTH + 0.2, y + 0.9, 0.2])
         );
       }
     });
@@ -201,32 +164,15 @@ function getHouseDetails(
   const doorCenter = width / 2;
   points.push(
     // Door frame
-    [[doorCenter - 0.6, 0, 0.01], [doorCenter + 0.6, 0, 0.01]],
-    [[doorCenter - 0.6, 0, 0.01], [doorCenter - 0.6, 2.2, 0.01]],
-    [[doorCenter + 0.6, 0, 0.01], [doorCenter + 0.6, 2.2, 0.01]],
+    createDetailLine([doorCenter - 0.6, 0, 0.01], [doorCenter + 0.6, 0, 0.01]),
+    createDetailLine([doorCenter - 0.6, 0, 0.01], [doorCenter - 0.6, 2.2, 0.01]),
+    createDetailLine([doorCenter + 0.6, 0, 0.01], [doorCenter + 0.6, 2.2, 0.01]),
     // Door panels
-    [[doorCenter - 0.4, 0.4, 0.02], [doorCenter + 0.4, 0.4, 0.02]],
-    [[doorCenter - 0.4, 1.8, 0.02], [doorCenter + 0.4, 1.8, 0.02]],
+    createDetailLine([doorCenter - 0.4, 0.4, 0.02], [doorCenter + 0.4, 0.4, 0.02]),
+    createDetailLine([doorCenter - 0.4, 1.8, 0.02], [doorCenter + 0.4, 1.8, 0.02]),
     // Door handle
-    [[doorCenter + 0.3, 1.1, 0.03], [doorCenter + 0.3, 1.5, 0.03]]
+    createDetailLine([doorCenter + 0.3, 1.1, 0.03], [doorCenter + 0.3, 1.5, 0.03])
   );
-
-  // Basement details
-  if (hasBasement) {
-    const basementWindowWidth = 1;
-    const basementWindowPositions = [width * 0.25, width * 0.75];
-    basementWindowPositions.forEach(x => {
-      points.push(
-        // Window frame
-        [[x, baseY + 0.5, 0.01], [x + basementWindowWidth, baseY + 0.5, 0.01]],
-        [[x, baseY + 1.3, 0.01], [x + basementWindowWidth, baseY + 1.3, 0.01]],
-        [[x, baseY + 0.5, 0.01], [x, baseY + 1.3, 0.01]],
-        [[x + basementWindowWidth, baseY + 0.5, 0.01], [x + basementWindowWidth, baseY + 1.3, 0.01]],
-        // Window well
-        [[x - 0.2, baseY, 0], [x + basementWindowWidth + 0.2, baseY, 0.3]]
-      );
-    });
-  }
 
   return points;
 }

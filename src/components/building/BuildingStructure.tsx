@@ -21,7 +21,7 @@ export function BuildingStructure({ type, floors, width, depth, hasBasement }: B
       {points.map((linePoints, index) => (
         <Line
           key={index}
-          points={linePoints.map(([x, y, z]) => new Vector3(x, y, z))}
+          points={linePoints.map((point) => new Vector3(point[0], point[1], point[2]))}
           color="#334155"
           lineWidth={1.5}
         />
