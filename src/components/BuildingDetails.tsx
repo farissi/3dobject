@@ -17,7 +17,7 @@ export function BuildingDetails({ type, floors }: BuildingDetailsProps) {
         <Line
           key={`detail-${index}`}
           points={linePoints.map(([x, y, z]) => new Vector3(x, y, z))}
-          color="#666"
+          color="#64748b"
           lineWidth={0.5}
         />
       ))}
@@ -25,65 +25,72 @@ export function BuildingDetails({ type, floors }: BuildingDetailsProps) {
   );
 }
 
-function getApartmentDetails(floors: number) {
-  return [
-    // Decorative elements
-    ...Array.from({ length: floors }, (_, i) => [
-      // Balcony railings
-      ...createRailing(1.2, i * 3, 0, 1.5, 1),
-      ...createRailing(3.3, i * 3, 0, 1.5, 1),
-      // Window details
-      ...createWindowDetail(1.5, i * 3 + 1, 0, 1.2, 1.5),
-      ...createWindowDetail(3.3, i * 3 + 1, 0, 1.2, 1.5),
-    ]),
-  ];
+function getApartmentDetails(floors: number): [number, number, number][][] {
+  const points: [number, number, number][][] = [];
+  const floorHeight = 3;
+
+  // Balconies and railings
+  for (let i = 0; i < floors; i++) {
+    const y = i * floorHeight;
+    
+    // Left balcony
+    points.push([
+      [1.2, y, 0], [3.2, y, 0],
+      [3.2, y + 1, 0], [1.2, y + 1, 0],
+      [1.2, y, 0]
+    ]);
+
+    // Right balcony
+    points.push([
+      [4, y, 0], [5.8, y, 0],
+      [5.8, y + 1, 0], [4, y + 1, 0],
+      [4, y, 0]
+    ]);
+
+    // Railings
+    for (const x of [1.2, 1.8, 2.4, 3.2, 4, 4.6, 5.2, 5.8]) {
+      points.push([[x, y, 0], [x, y + 1, 0]]);
+    }
+  }
+
+  return points;
 }
 
-function getHouseDetails(floors: number) {
-  return [
-    // Decorative elements
-    ...createChimney(5.5, floors * 2.8, 1, 0.5, 1.5),
-    ...Array.from({ length: floors }, (_, i) => [
-      // Window sills
-      ...createWindowSill(1, i * 2.8 + 1, 0, 1.2),
-      ...createWindowSill(5, i * 2.8 + 1, 0, 1.2),
-    ]),
-  ];
-}
+function getHouseDetails(floors: number): [number, number, number][][] {
+  const points: [number, number, number][][] = [];
+  const floorHeight = 3;
+  const totalHeight = floors * floorHeight;
 
-function createRailing(x: number, y: number, z: number, width: number, height: number) {
-  const posts = 4;
-  const spacing = width / (posts - 1);
-  
-  return Array.from({ length: posts }, (_, i) => [
-    [x + i * spacing, y, z], [x + i * spacing, y + height, z],
+  // Chimney
+  points.push([
+    [5.5, totalHeight, 1], [6.2, totalHeight, 1],
+    [6.2, totalHeight + 2, 1], [5.5, totalHeight + 2, 1],
+    [5.5, totalHeight, 1]
   ]);
-}
 
-function createWindowDetail(x: number, y: number, z: number, width: number, height: number) {
-  return [
-    // Window frame details
-    [[x - 0.1, y - 0.1, z], [x + width + 0.1, y - 0.1, z]],
-    [[x - 0.1, y + height + 0.1, z], [x + width + 0.1, y + height + 0.1, z]],
-  ];
-}
+  points.push([
+    [5.5, totalHeight, 1.5], [6.2, totalHeight, 1.5],
+    [6.2, totalHeight + 2, 1.5], [5.5, totalHeight + 2, 1.5],
+    [5.5, totalHeight, 1.5]
+  ]);
 
-function createWindowSill(x: number, y: number, z: number, width: number) {
-  return [
-    [[x - 0.2, y - 0.1, z], [x + width + 0.2, y - 0.1, z]],
-    [[x - 0.2, y - 0.1, z], [x - 0.2, y - 0.2, z]],
-    [[x + width + 0.2, y - 0.1, z], [x + width + 0.2, y - 0.2, z]],
-  ];
-}
+  // Chimney connections
+  points.push(
+    [[5.5, totalHeight, 1], [5.5, totalHeight, 1.5]],
+    [[6.2, totalHeight, 1], [6.2, totalHeight, 1.5]],
+    [[5.5, totalHeight + 2, 1], [5.5, totalHeight + 2, 1.5]],
+    [[6.2, totalHeight + 2, 1], [6.2, totalHeight + 2, 1.5]]
+  );
 
-function createChimney(x: number, y: number, z: number, width: number, height: number) {
-  return [
-    // Chimney structure
-    [[x, y, z], [x + width, y, z], [x + width, y + height, z], [x, y + height, z], [x, y, z]],
-    [[x, y, z + width], [x + width, y, z + width], [x + width, y + height, z + width], [x, y + height, z + width], [x, y, z + width]],
-    [[x, y, z], [x, y, z + width]],
-    [[x + width, y, z], [x + width, y, z + width]],
-    [[x, y + height, z], [x, y + height, z + width]],
-    [[x + width, y + height, z], [x + width, y + height, z + width]],
-  ];
+  // Door details
+  points.push([
+    [3.5, 0, 0.01], [4.5, 0, 0.01],
+    [4.5, 2.2, 0.01], [4, 2.4, 0.01],
+    [3.5, 2.2, 0.01], [3.5, 0, 0.01]
+  ]);
+
+  // Door handle
+  points.push([[4, 1.1, 0.01], [4, 1.8, 0.01]]);
+
+  return points;
 }
